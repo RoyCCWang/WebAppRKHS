@@ -21,53 +21,51 @@
 # https://genieframework.github.io/Genie.jl/dev/tutorials/7--Using_JSON_Payloads.html
 using Genie, Genie.Router, Genie.Requests, Genie.Renderer.Json
 
+import RKHSRegularization
+
 route("/jsonpayload", method = POST) do
   @show jsonpayload()
   @show rawpayload()
 
-  json("Hello $(jsonpayload()["input_array"])")
+  incoming_array = jsonpayload()["input_array"]
+  #println("typeof(incoming_array) = ", incoming_array)
+  x = convert(Vector{Float64}, incoming_array[1])
+  y = convert(Vector{Float64}, incoming_array[2])
+  xq = convert(Vector{Float64}, incoming_array[3])
+
+  hyperparams = convert(Vector{Float64}, incoming_array[4])
+  θ_len = hyperparams[1]
+  σ² = hyperparams[2]
+
+  # make these into user-inputs later.
+  θ = RKHSRegularization.Spline34KernelType(θ_len)
+
+  N = length(x)
+  # TODO error handle if length(y) != length(x).
+  Nq = length(xq)
+
+  # do GP regression.
+  X = collect( [x[n]] for n = 1:N )
+
+  η = RKHSRegularization.RKHSProblemType( zeros(Float64,length(X)),
+                       X,
+                       θ,
+                       σ²)
+  RKHSRegularization.fitRKHS!(η, y)
+
+  # query.
+  #xq = collect( [xq_range[n]] for n = 1:Nq )
+  #f_xq = f.(xq_range) # generating function.
+
+  yq = Vector{Float64}(undef, Nq)
+  Xq = collect( [xq[n]] for n = 1:Nq )
+  RKHSRegularization.query!(yq, xq, η)
+
+  # assemble output.
+
+  json("$(yq)")
 #  json("$(jsonpayload()["x"]), $(jsonpayload()["y"])")
 
-
-  # # make these into user-inputs later.
-  # θ = RKHSRegularization.Spline34KernelType(0.04)
-  # σ² = 1e-3
-  #
-  # # move uploaded file.
-  # f_name = filename(filespayload(:yourfile))
-  #  print("f_name = $(f_name)") # debug.
-  #
-  # # load to file.
-  # x_string = readtargetnames(f_name)
-  # x = collect( tryparse(Float64, x_string[i]) for i = 1:length(x_string) )
-  # filter!(xx->typeof(xx)<:Real, x) # in case there are empty lines.
-  #
-  # N = length(x)
-  # println(x)
-  #
-  # # do GP regression.
-  # X = collect( [x[n]] for n = 1:N )
-  #
-  # f = xx->sinc(4*xx)*xx^3 # oracle.
-  # y = f.(x)
-  #
-  # η = RKHSRegularization.RKHSProblemType( zeros(Float64,length(X)),
-  #                      X,
-  #                      θ,
-  #                      σ²)
-  # RKHSRegularization.fitRKHS!(η, y)
-  #
-  #
-  #
-  # # query.
-  # Nq = 1000
-  # xq_range = LinRange(x[1], x[end], Nq)
-  # xq = collect( [xq_range[n]] for n = 1:Nq )
-  #
-  # f_xq = f.(xq_range) # generating function.
-  #
-  # yq = Vector{Float64}(undef, Nq)
-  # RKHSRegularization.query!(yq,xq,η)
 
 end
 
