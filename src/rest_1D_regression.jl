@@ -1,3 +1,8 @@
+
+import Pkg
+Pkg.add(path="https://github.com/RoyCCWang/RKHSRegularization")
+Pkg.add("Genie")
+
 using Genie, Genie.Router, Genie.Requests, Genie.Renderer.Json
 
 import RKHSRegularization

@@ -1,33 +1,38 @@
 
+import Pkg
+Pkg.add("HTTP")
+Pkg.add("JSON3")
+Pkg.add("PyPlot")
+
 import HTTP
 import JSON3
 
+f = xx->sinc(4*xx)*xx^3 # oracle function to fit.
+
+# generate data.
 x_range = LinRange(-3, 5, 20)
-f = xx->sinc(4*xx)*xx^3 # oracle.
 y = f.(x_range)
 
+# the query positions for plotting.
 Nq = 1000
 xq_range = LinRange(x_range[1], x_range[end], Nq)
 
+# specify Gaussian process regression tuning parameters.
 θ_len = 0.34
 σ² = 1e-3
 hyperparams = [θ_len; σ²]
 
+# set up and send to microservice.
 xq = collect(xq_range)
 x = collect(x_range)
 
-# set up and send to microservice.
 input_array = Vector{Vector{Float64}}(undef, 4)
 input_array[1] = x
 input_array[2] = y
 input_array[3] = xq
 input_array[4] = hyperparams
 
-
-#import RKHSRegularization
-#incoming_array = input_array
-
-
+# put into the JSON format that the server script is expecting.
 q =  """{"input_array":$(input_array)}"""
 
 # z = HTTP.request("POST", "http://localhost:8000/jsonpayload",
@@ -41,6 +46,8 @@ h = String(z.body)
 out_j3 = JSON3.read(h)
 yq = convert(Vector{Float64}, out_j3)
 
+# if the server was successful in fitting a curve, i.e., the queried points yq is non-empty,
+#   plot.
 if !isempty(yq)
     import PyPlot
     PyPlot.close("all")
@@ -56,5 +63,5 @@ if !isempty(yq)
     PyPlot.title(title_string)
     PyPlot.legend()
 else
-    print("Bad input.")
+    print("Bad input. The algorithm on the server failed to fit a Gaussian process regression model.")
 end
