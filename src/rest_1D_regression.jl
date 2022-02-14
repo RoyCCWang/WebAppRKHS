@@ -1,11 +1,11 @@
 
 import Pkg
-Pkg.add(path="https://github.com/RoyCCWang/RKHSRegularization")
+Pkg.add("PatchMixtureKriging")
 Pkg.add("Genie")
 
 using Genie, Genie.Router, Genie.Requests, Genie.Renderer.Json
 
-import RKHSRegularization
+import PatchMixtureKriging
 
 #Genie.config.run_as_server = true
 
@@ -49,7 +49,7 @@ end
 
 function run1Dregression!(yq::Vector{T}, x::Vector{T}, y::Vector{T}, xq::Vector{T}, θ_len::T, σ²::T)::Nothing where T
 
-    θ = RKHSRegularization.Spline34KernelType(θ_len)
+    θ = PatchMixtureKriging.Spline34KernelType(θ_len)
 
     N = length(x)
     Nq = length(xq)
@@ -57,16 +57,16 @@ function run1Dregression!(yq::Vector{T}, x::Vector{T}, y::Vector{T}, xq::Vector{
     # do GP regression.
     X = collect( [x[n]] for n = 1:N )
 
-    η = RKHSRegularization.RKHSProblemType( zeros(Float64,length(X)),
+    η = PatchMixtureKriging.RKHSProblemType( zeros(Float64,length(X)),
                      X,
                      θ,
                      σ²)
-    RKHSRegularization.fitRKHS!(η, y)
+    PatchMixtureKriging.fitRKHS!(η, y)
 
     # query.
     resize!(yq, Nq)
     Xq = collect( [xq[n]] for n = 1:Nq )
-    RKHSRegularization.query!(yq, Xq, η)
+    PatchMixtureKriging.query!(yq, Xq, η)
 
     return nothing
 end

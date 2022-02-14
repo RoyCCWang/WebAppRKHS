@@ -1,11 +1,25 @@
 
 import Pkg
-Pkg.add("HTTP")
-Pkg.add("JSON3")
-Pkg.add("PyPlot")
 
-import HTTP
-import JSON3
+try
+   import HTTP
+catch er
+   Pkg.add("HTTP")
+end
+
+
+try
+   import JSON3
+catch er
+   Pkg.add("JSON3")
+end
+
+try
+   import PyPlot
+catch er
+   Pkg.add("PyPlot")
+end
+
 
 f = xx->sinc(4*xx)*xx^3 # oracle function to fit.
 
